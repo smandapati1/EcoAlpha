@@ -1,17 +1,41 @@
-EcoAlpha is a command-line tool that combines natural language processing (NLP) and quantitative finance to build ESG-aware investment portfolios.
+🌿 **EcoAlpha**
+NLP-Driven ESG Portfolio Optimization Tool
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+📌 Table of Contents
+**Overview**
 
-Instead of relying on proprietary or opaque ESG vendor scores, ESGOptima extracts ESG sentiment directly from unstructured financial text—like 10-K filings or sustainability reports—using transformer-based NLP models. These scores are then integrated into a portfolio optimization framework to help investors allocate capital in a way that balances returns, risk, and environmental/social responsibility.
+**Features**
 
-🔍 Key Features
-🔎 ESG Signal Extraction
-Uses FinBERT (or similar models) to analyze financial documents for sentiment related to Environmental, Social, and Governance factors.
+**Architecture**
 
-📊 ESG Scoring Engine
-Aggregates sentiment into interpretable, numerical ESG scores for each company.
+**Installation**
 
-💰 Portfolio Optimization
-Incorporates ESG scores into a risk-return optimization model using techniques like mean-variance optimization (Markowitz) or the Black-Litterman model.
+**Use Cases**
 
-🖥 Command-Line Interface (CLI)
-Allows users to run the full pipeline with customizable inputs:
+**Examples**
 
+**Directory Structure**
+
+**Technologies Used**
+
+**Future Improvements**
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+📖**Overview**
+EcoAlpha is a command-line tool that uses Natural Language Processing (NLP) to extract Environmental, Social, and Governance (ESG) insights from financial documents like SEC filings and sustainability reports.
+
+These ESG scores are then integrated into a portfolio optimization model, helping potential investors allocate capital in a way that maximizes return, minimizes risk, and aligns with sustainability principles.
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+✅ **Features**
+ESG Extraction from Text
+Uses transformer-based NLP (e.g., FinBERT) to analyze ESG-related sentiment in company reports.
+
+Score Aggregation Engine
+Converts ESG sentiment into numerical scores at the company level.
+
+Quantitative Portfolio Optimization
+Leverages modern portfolio theory to build risk-return-ESG balanced portfolios.
+
+Command-Line Interface
+Easily customize inputs like tickers and date ranges through terminal commands.
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
