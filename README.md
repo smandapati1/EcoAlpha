@@ -33,6 +33,7 @@ EcoAlpha is a command-line tool that uses Natural Language Processing (NLP) to e
 These ESG scores are then integrated into a portfolio optimization model, helping potential investors allocate capital in a way that maximizes return, minimizes risk, and aligns with sustainability principles.
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ✅ **Features**
+
 ESG Extraction from Text
 Uses transformer-based NLP (e.g., FinBERT) to analyze ESG-related sentiment in company reports.
 
