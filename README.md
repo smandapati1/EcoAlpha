@@ -25,6 +25,8 @@ Future Improvements
 License
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 📖**Overview**
 EcoAlpha is a command-line tool that uses Natural Language Processing (NLP) to extract Environmental, Social, and Governance (ESG) insights from financial documents like SEC filings and sustainability reports.
 
