@@ -15,19 +15,3 @@ Incorporates ESG scores into a risk-return optimization model using techniques l
 🖥 Command-Line Interface (CLI)
 Allows users to run the full pipeline with customizable inputs:
 
-bash
-Copy
-Edit
-python main.py --tickers AAPL MSFT TSLA --start_date 2023-01-01 --end_date 2023-12-31
-🧠 How It Works
-Input tickers and date range via CLI.
-
-Download and parse ESG-related documents (e.g., 10-Ks).
-
-Run NLP models to detect ESG sentiment per company.
-
-Generate ESG scores and integrate with historical return data.
-
-Optimize the portfolio based on risk, return, and ESG alignment.
-
-Output clean weights and suggested asset allocations.
