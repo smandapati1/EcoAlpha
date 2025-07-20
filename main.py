@@ -20,9 +20,13 @@ def main(tickers, start_date, end_date):
    
 if __name__ == "__main__":
       parser = argparse.ArgumentParser(description="ESG-Based Portfolio Optimizer CLI")
+      
       parser.add_argument('--tickers', nargs='+', required=True, help="List of stock tickers (e.g., AAPL MSFT NVDA)")
+      
       parser.add_argument('--start_date', type=str, required=True, help="Start date for price data (e.g., 2023-01-01)")
+      
       parser.add_argument('--end_date', type=str, required=True, help="End date for price data (e.g., 2023-12-31)")
 
       args = parser.parse_args()
+      
       main(args.tickers, args.start_date, args.end_date)
