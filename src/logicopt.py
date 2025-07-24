@@ -46,9 +46,7 @@ def optimize_portfolio(prices, esg_df, min_avg_esg=0.6):
 
 
 def allocate_discrete(weights, prices, total_portfolio_value=10_000):
-    """
-    Allocate actual shares based on the weights and latest prices.
-    """
+   
     latest_prices = get_latest_prices(prices)
     da = DiscreteAllocation(weights, latest_prices, total_portfolio_value=total_portfolio_value)
     allocation, leftover = da.lp_portfolio()
