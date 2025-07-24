@@ -8,7 +8,7 @@ def main(tickers, start_date, end_date):
     raw_texts = extractingesg.download_and_extract(tickers)
 
     # Step 2: Extract ESG scores from reports
-    esg_results = scorecomputation.extractingesg(raw_texts)
+    esg_results = scorecomputation.extract_esg_scores_from_texts(raw_texts)
     print("ESG Scores:", esg_results)
 
     # Step 3: Fetch stock price data
