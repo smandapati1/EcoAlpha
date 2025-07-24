@@ -1,44 +1,29 @@
-from collections import Counter
-import os
 import json
+import os
 
+def extract_esg_scores_from_texts(texts):
+    """
+    Extracts basic ESG scores from input text per ticker.
+    Scores are based on frequency of ESG-related keywords.
+    """
+    scores = {}
 
-def compute_esg_score(sentiment_counts):
-    
-    pos = sentiment_counts.get("POSITIVE", 0)
-    neu = sentiment_counts.get("NEUTRAL", 0)
-    neg = sentiment_counts.get("NEGATIVE", 0)
+    for ticker, content in texts.items():
+        content_lower = content.lower()
 
-    total = pos + neu + neg
-   
-    if total == 0:
-        return 0.0 
+        # Simple keyword frequency-based scoring
+        scores[ticker] = {
+            "E": content_lower.count("environment") + content_lower.count("climate"),
+            "S": content_lower.count("social") + content_lower.count("community") + content_lower.count("diversity"),
+            "G": content_lower.count("governance") + content_lower.count("board") + content_lower.count("ethics")
+        }
 
-    score = (1 * pos + 0.5 * neu + 0 * neg) / total
-    return round(score, 4)
+    return scores
 
-
-def process_sentiment_folder(sentiment_folder, output_file):
-   
-    company_scores = {}
-
-    for filename in os.listdir(sentiment_folder):
-        if filename.endswith(".json"):
-            filepath = os.path.join(sentiment_folder, filename)
-            with open(filepath, "r") as f:
-                sentiments = json.load(f)
-
-            sentiment_labels = [entry["label"] for entry in sentiments]
-            sentiment_counts = dict(Counter(sentiment_labels))
-            score = compute_esg_score(sentiment_counts)
-
-            company_name = filename.replace("_sentiment.json", "")
-            company_scores[company_name] = {
-                "score": score,
-                "counts": sentiment_counts
-            }
-
-    with open(output_file, "w") as out:
-        json.dump(company_scores, out, indent=4)
-
-    print(f"[✓] ESG scores computed and saved to {output_file}")
+def save_esg_scores(scores, output_path="data/processed/esg_scores.json"):
+    """
+    Saves ESG scores to a JSON file.
+    """
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, "w") as f:
+        json.dump(scores, f, indent=2)

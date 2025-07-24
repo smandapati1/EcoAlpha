@@ -1,42 +1,54 @@
 import os
-import json
+from typing import Dict
+import re
+from transformers import pipeline
 
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
+# Optional: Load FinBERT sentiment analysis pipeline
+sentiment_pipeline = pipeline("sentiment-analysis", model="ProsusAI/finbert")
 
-def load_finbert_pipeline():
+def download_and_extract(tickers: list, esg_dir: str = "data/raw/esg_reports") -> Dict[str, str]:
+    """
+    Loads ESG text reports for the given tickers from local files.
 
-    model_name = "yiyanghkust/finbert-esg"
-    
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    
-    model = AutoModelForSequenceClassification.from_pretrained(model_name)
-    
-    return pipeline("text-classification", model=model, tokenizer=tokenizer)
+    Args:
+        tickers (list): List of stock tickers
+        esg_dir (str): Path to the ESG report directory
 
-def extract_esg_sentences(text, keywords):
-   
-    sentences = [s.strip() for s in text.split('.') if len(s.strip()) > 20]
-    return [s for s in sentences if any(k.lower() in s.lower() for k in keywords)]
+    Returns:
+        Dict[str, str]: Dictionary of {ticker: ESG text}
+    """
+    texts = {}
+    for ticker in tickers:
+        path = os.path.join(esg_dir, f"{ticker}.txt")
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                texts[ticker] = f.read()
+        else:
+            texts[ticker] = f"No ESG report found for {ticker}"
+    return texts
 
-def score_text_file(input_path, output_path, nlp_pipeline, keywords):
-    
-    with open(input_path, encoding="utf-8", errors="ignore") as f:
-        text = f.read()
+def extract_esg_scores_from_texts(texts: Dict[str, str]) -> Dict[str, float]:
+    """
+    Extract ESG scores from the provided text using sentiment analysis.
 
-    esg_sentences = extract_esg_sentences(text, keywords)
-    if not esg_sentences:
-        print(f"[Warning] No ESG sentences found in {input_path}")
-        return
+    Args:
+        texts (Dict[str, str]): Dictionary of {ticker: ESG report text}
 
-    results = []
-    for sent in esg_sentences:
-        prediction = nlp_pipeline(sent)[0]  
-        prediction["sentence"] = sent
-        results.append(prediction)
+    Returns:
+        Dict[str, float]: Dictionary of {ticker: ESG score (0-1)}
+    """
+    scores = {}
+    for ticker, text in texts.items():
+        if "No ESG report found" in text:
+            scores[ticker] = 0.0
+            continue
 
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        # Apply sentiment model (FinBERT)
+        results = sentiment_pipeline(text[:1000])  # truncate for performance
 
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(results, f, indent=2)
-
-    print(f"[Info] Scored {len(results)} ESG sentences from {input_path}")
+        # Map sentiment to score
+        positive = sum(1 for r in results if r['label'] == 'positive')
+        total = len(results)
+        score = positive / total if total else 0.0
+        scores[ticker] = round(score, 2)
+    return scores
