@@ -1,53 +1,40 @@
-
-
+import numpy as np
 import pandas as pd
-import json
 from pypfopt.efficient_frontier import EfficientFrontier
 from pypfopt.expected_returns import mean_historical_return
-from pypfopt.risk_models import CovarianceShrinkage
-from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
+from pypfopt.risk_models import sample_cov
 
+def compute_esg_weight_adjustments(esg_scores):
+    """
+    Normalize ESG scores and compute weight adjustments.
+    """
+    esg_df = pd.DataFrame(esg_scores).T
+    # Normalize each component
+    normalized = esg_df / esg_df.max()
+    # Average the components to get overall ESG score
+    normalized['ESG'] = normalized.mean(axis=1)
+    # Normalize final ESG scores
+    final_weights = normalized['ESG'] / normalized['ESG'].sum()
+    return final_weights.to_dict()
 
-def load_data(price_path, esg_path):
-   
-    prices = pd.read_csv(price_path, index_col="Date", parse_dates=True)
-    with open(esg_path, "r") as f:
-        esg_data = json.load(f)
-
-    esg_scores = {company: info["score"] for company, info in esg_data.items()}
-    esg_df = pd.DataFrame.from_dict(esg_scores, orient="index", columns=["ESG"])
-    return prices, esg_df
-
-
-def optimize_portfolio(prices, esg_df, min_avg_esg=0.6):
-   
-    tickers = [ticker for ticker in prices.columns if ticker in esg_df.index]
-
-    prices = prices[tickers]
-    esg_df = esg_df.loc[tickers]
-
-    mu = mean_historical_return(prices)
-    S = CovarianceShrinkage(prices).ledoit_wolf()
+def optimize_portfolio(price_data, esg_scores=None):
+    """
+    Optimize a portfolio optionally incorporating ESG scores into the objective.
+    """
+    mu = mean_historical_return(price_data)
+    S = sample_cov(price_data)
 
     ef = EfficientFrontier(mu, S)
 
-    adjusted_mu = mu.copy()
-    for ticker in tickers:
-        if esg_df.loc[ticker, "ESG"] < min_avg_esg:
-            adjusted_mu[ticker] *= 0.8  
+    if esg_scores:
+        esg_weights = compute_esg_weight_adjustments(esg_scores)
+        # Adjust expected returns using ESG scores
+        for ticker in mu.index:
+            if ticker in esg_weights:
+                mu[ticker] *= esg_weights[ticker]
 
-    ef = EfficientFrontier(adjusted_mu, S)
+        ef = EfficientFrontier(mu, S)
+
     weights = ef.max_sharpe()
     cleaned_weights = ef.clean_weights()
-
-    performance = ef.portfolio_performance(verbose=True)
-
-    return cleaned_weights, performance
-
-
-def allocate_discrete(weights, prices, total_portfolio_value=10_000):
-   
-    latest_prices = get_latest_prices(prices)
-    da = DiscreteAllocation(weights, latest_prices, total_portfolio_value=total_portfolio_value)
-    allocation, leftover = da.lp_portfolio()
-    return allocation, leftover
+    return cleaned_weights

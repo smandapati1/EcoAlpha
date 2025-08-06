@@ -1,25 +1,24 @@
 import yfinance as yf
 import pandas as pd
-import os
-import json
 
 def download_price_data(tickers, start_date, end_date):
     """
-    Download historical price data using yfinance.
-    Returns a DataFrame with adjusted close prices.
-    """
-    price_data = yf.download(tickers, start=start_date, end=end_date)["Adj Close"]
+    Downloads historical adjusted close price data for the given tickers
+    between start_date and end_date using yfinance.
 
-    # Save raw price data (optional)
-    os.makedirs("data/processed", exist_ok=True)
-    price_data.to_csv("data/processed/price_data.csv")
+    Parameters:
+        tickers (list or str): Ticker symbols
+        start_date (str): Start date in 'YYYY-MM-DD'
+        end_date (str): End date in 'YYYY-MM-DD'
 
-    return price_data
+    Returns:
+        pd.DataFrame: DataFrame with adjusted close prices
+    """
+    data = yf.download(tickers, start=start_date, end=end_date, group_by='ticker', auto_adjust=False)
 
-def save_portfolio_weights(weights, output_path="data/processed/optimized_weights.json"):
-    """
-    Save portfolio weights as a JSON file.
-    """
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    with open(output_path, "w") as f:
-        json.dump(weights, f, indent=2)
+    if isinstance(tickers, str) or len(tickers) == 1:
+        # Single ticker case
+        return data["Adj Close"].to_frame(name=tickers[0] if isinstance(tickers, list) else tickers)
+    else:
+        # Multiple ticker case (MultiIndex columns)
+        return data["Adj Close"]
