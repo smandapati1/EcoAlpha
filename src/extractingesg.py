@@ -1,54 +1,49 @@
-import os
-from typing import Dict
 import re
-from transformers import pipeline
+import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
 
-# Optional: Load FinBERT sentiment analysis pipeline
-sentiment_pipeline = pipeline("sentiment-analysis", model="ProsusAI/finbert")
+# Download NLTK sentiment data if not already present
+nltk.download('vader_lexicon', quiet=True)
 
-def download_and_extract(tickers: list, esg_dir: str = "data/raw/esg_reports") -> Dict[str, str]:
+# Initialize sentiment analyzer
+sia = SentimentIntensityAnalyzer()
+
+def download_and_extract(tickers):
     """
-    Loads ESG text reports for the given tickers from local files.
-
-    Args:
-        tickers (list): List of stock tickers
-        esg_dir (str): Path to the ESG report directory
-
-    Returns:
-        Dict[str, str]: Dictionary of {ticker: ESG text}
+    Download ESG-related text for each ticker.
+    Placeholder implementation — replace with real API/news.
     """
     texts = {}
     for ticker in tickers:
-        path = os.path.join(esg_dir, f"{ticker}.txt")
-        if os.path.exists(path):
-            with open(path, "r", encoding="utf-8") as f:
-                texts[ticker] = f.read()
-        else:
-            texts[ticker] = f"No ESG report found for {ticker}"
+        texts[ticker] = f"{ticker} has initiatives for environmental sustainability, social equity, and strong governance."
     return texts
 
-def extract_esg_scores_from_texts(texts: Dict[str, str]) -> Dict[str, float]:
+def run_esg_analysis(texts):
     """
-    Extract ESG scores from the provided text using sentiment analysis.
-
-    Args:
-        texts (Dict[str, str]): Dictionary of {ticker: ESG report text}
-
-    Returns:
-        Dict[str, float]: Dictionary of {ticker: ESG score (0-1)}
+    Use NLP to assign ESG scores based on text sentiment and keywords.
+    Scores are normalized between 0 and 1.
     """
-    scores = {}
+    esg_scores = {}
+
     for ticker, text in texts.items():
-        if "No ESG report found" in text:
-            scores[ticker] = 0.0
-            continue
+        lower_text = text.lower()
 
-        # Apply sentiment model (FinBERT)
-        results = sentiment_pipeline(text[:1000])  # truncate for performance
+        # Base sentiment score
+        sentiment = sia.polarity_scores(text)["compound"]
+        sentiment = max(min((sentiment + 1) / 2, 1), 0)  # Normalize 0-1
 
-        # Map sentiment to score
-        positive = sum(1 for r in results if r['label'] == 'positive')
-        total = len(results)
-        score = positive / total if total else 0.0
-        scores[ticker] = round(score, 2)
-    return scores
+        # Keyword detection for E, S, G
+        e_keywords = ["environment", "climate", "sustainab", "carbon", "green"]
+        s_keywords = ["social", "equity", "diversity", "community", "employee"]
+        g_keywords = ["governance", "board", "transparency", "ethics", "compliance"]
+
+        def keyword_score(keywords):
+            return min(1.0, sum(1 for kw in keywords if kw in lower_text) / len(keywords) + 0.3)
+
+        e_score = 0.5 * sentiment + 0.5 * keyword_score(e_keywords)
+        s_score = 0.5 * sentiment + 0.5 * keyword_score(s_keywords)
+        g_score = 0.5 * sentiment + 0.5 * keyword_score(g_keywords)
+
+        esg_scores[ticker] = {"E": round(e_score, 2), "S": round(s_score, 2), "G": round(g_score, 2)}
+
+    return esg_scores
