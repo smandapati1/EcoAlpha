@@ -1,8 +1,5 @@
-fastapi
-uvicorn[standard]
-pandas
-numpy
-yfinance
-PyPortfolioOpt
-cvxpy
-nltk
+fastapi==0.116.1
+uvicorn==0.35.0
+yfinance==0.2.65
+pandas==2.2.2
+numpy==1.26.4
