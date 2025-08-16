@@ -1,95 +1,74 @@
-from __future__ import annotations
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
+import src.utilityfunc as utilityfunc
+import src.logicopt as logicopt
+import src.extractingesg as extractingesg
 
-from typing import List, Dict, Optional
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, field_validator
+# Initialize FastAPI app
+app = FastAPI(title="ECOALPHA API", version="1.0.0")
 
-# Import your project modules (repo root must contain both `api/` and `src/`)
-from src import extractingesg, utilityfunc, logicopt
-
-
-# -----------------------
-# FastAPI app & middleware
-# -----------------------
-app = FastAPI(title="ECOALPHA API", version="1.0.0", docs_url="/docs", redoc_url="/redoc")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],           # tighten to your frontend origin in prod
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-# -----------------------
-# Request/Response models
-# -----------------------
+# -------------------------------
+# Models for request validation
+# -------------------------------
 class OptimizeRequest(BaseModel):
-    tickers: List[str] = Field(..., min_length=1, description="List of ticker symbols")
-    start_date: str = Field(..., description="YYYY-MM-DD")
-    end_date: str = Field(..., description="YYYY-MM-DD")
-    mock_esg: bool = Field(True, description="Use varied mock ESG (good for demos)")
-    seed: Optional[int] = Field(2025, description="Seed for mock ESG randomness")
+    tickers: list[str]
+    start_date: str
+    end_date: str
+    mock_esg: bool = False  # allow testing without real Yahoo ESG data
 
-    @field_validator("tickers")
-    @classmethod
-    def strip_tickers(cls, v: List[str]) -> List[str]:
-        return [t.strip().upper() for t in v if t.strip()]
+# -------------------------------
+# Routes
+# -------------------------------
+@app.get("/", response_class=HTMLResponse)
+def index():
+    """Landing page at root /"""
+    return """
+    <html>
+      <head><title>ECOALPHA API</title></head>
+      <body style="font-family:system-ui;margin:2rem">
+        <h1>🌿 ECOALPHA API</h1>
+        <p>Your backend is live.</p>
+        <ul>
+          <li><a href="/docs">OpenAPI docs</a></li>
+          <li><a href="/health">Health check</a></li>
+          <li><a href="/optimize">Optimize endpoint (POST)</a></li>
+        </ul>
+      </body>
+    </html>
+    """
 
-class OptimizeResponse(BaseModel):
-    esg: Dict[str, Dict[str, float]]
-    weights: Dict[str, float]
-
-
-# -----------------------
-# Health check
-# -----------------------
 @app.get("/health")
-def health() -> Dict[str, str]:
+def health():
+    """Simple health check"""
     return {"status": "ok"}
 
+@app.post("/optimize")
+def optimize(request: OptimizeRequest):
+    """Optimize portfolio with ESG considerations"""
+    print(f"ESG-based portfolio optimization for: {request.tickers}")
 
-# -----------------------
-# Main endpoint
-# -----------------------
-@app.post("/optimize", response_model=OptimizeResponse)
-def optimize(req: OptimizeRequest):
-    """
-    1) Build ESG signals (mock or live).
-    2) Download prices.
-    3) Optimize portfolio (ESG-aware), with safe fallback to min volatility.
-    """
-    # 1) ESG signals
-    try:
-        if req.mock_esg:
-            raw = extractingesg.build_mock_raw(req.tickers, seed=req.seed or 2025)
-        else:
-            raw = extractingesg.download_and_extract(req.tickers)
-        esg = extractingesg.run_esg_analysis(raw)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"ESG pipeline failed: {e}")
+    # Step 1: ESG data
+    if request.mock_esg:
+        raw_data = {t: {"environmentScore": 70, "socialScore": 60, "governanceScore": 80} for t in request.tickers}
+    else:
+        raw_data = extractingesg.download_and_extract(request.tickers)
 
-    # 2) Prices
-    try:
-        prices = utilityfunc.download_price_data(req.tickers, req.start_date, req.end_date)
-        if prices is None or prices.empty:
-            raise ValueError("No price data returned (empty DataFrame).")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Price download failed: {e}")
+    esg_results = extractingesg.run_esg_analysis(raw_data)
+    print("ESG Scores:", esg_results)
 
-    # 3) Optimize (ESG-aware), with robust fallback
-    try:
-        weights = logicopt.optimize_portfolio(prices, esg_scores=esg)
-    except Exception as err:
-        # Fallback if max_sharpe (or solver) fails
-        try:
-            weights = logicopt.optimize_portfolio(prices)  # non-ESG fallback
-        except Exception as err2:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Optimization failed: {err}; fallback failed: {err2}",
-            )
+    # Step 2: Market data
+    price_df = utilityfunc.download_price_data(request.tickers, request.start_date, request.end_date)
+    print(f"Retrieved {len(price_df)} rows of stock price data.")
 
-    return OptimizeResponse(esg=esg, weights=weights)
+    # Step 3: Optimization
+    weights = logicopt.optimize_portfolio(price_df, esg_results)
+
+    return {"esg": esg_results, "weights": weights}
+
+# -------------------------------
+# Run locally (ignored on Render)
+# -------------------------------
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
