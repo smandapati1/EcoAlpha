@@ -1,40 +1,95 @@
-from src import extractingesg, scorecomputation, utilityfunc, logicopt, visualize
+from __future__ import annotations
 
-def main(tickers, start_date, end_date, use_mock=False):
-    print(f"\nESG-based portfolio optimization for: {tickers}\n")
+from typing import List, Dict, Optional
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field, field_validator
 
-    # Step 1: Collect raw ESG sources (mock or real)
-    if use_mock:
-        raw_sources = extractingesg.build_mock_raw(tickers, seed=2025)  # 👈 varied, deterministic
-        print("[Info] Using MOCK ESG sources for testing.")
-    else:
-        raw_sources = extractingesg.download_and_extract(tickers)
+# Import your project modules (repo root must contain both `api/` and `src/`)
+from src import extractingesg, utilityfunc, logicopt
 
-    # Step 2: ESG analysis → E/S/G scores (0..1)
-    esg_results = extractingesg.run_esg_analysis(raw_sources)
-    print("ESG Scores:", esg_results)
 
-    # Step 3: Prices
-    price_df = utilityfunc.download_price_data(tickers, start_date, end_date)
-    print(f"Retrieved {len(price_df)} rows of stock price data.")
+# -----------------------
+# FastAPI app & middleware
+# -----------------------
+app = FastAPI(title="ECOALPHA API", version="1.0.0", docs_url="/docs", redoc_url="/redoc")
 
-    # Step 4: Optimize (with ESG influence)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],           # tighten to your frontend origin in prod
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# -----------------------
+# Request/Response models
+# -----------------------
+class OptimizeRequest(BaseModel):
+    tickers: List[str] = Field(..., min_length=1, description="List of ticker symbols")
+    start_date: str = Field(..., description="YYYY-MM-DD")
+    end_date: str = Field(..., description="YYYY-MM-DD")
+    mock_esg: bool = Field(True, description="Use varied mock ESG (good for demos)")
+    seed: Optional[int] = Field(2025, description="Seed for mock ESG randomness")
+
+    @field_validator("tickers")
+    @classmethod
+    def strip_tickers(cls, v: List[str]) -> List[str]:
+        return [t.strip().upper() for t in v if t.strip()]
+
+class OptimizeResponse(BaseModel):
+    esg: Dict[str, Dict[str, float]]
+    weights: Dict[str, float]
+
+
+# -----------------------
+# Health check
+# -----------------------
+@app.get("/health")
+def health() -> Dict[str, str]:
+    return {"status": "ok"}
+
+
+# -----------------------
+# Main endpoint
+# -----------------------
+@app.post("/optimize", response_model=OptimizeResponse)
+def optimize(req: OptimizeRequest):
+    """
+    1) Build ESG signals (mock or live).
+    2) Download prices.
+    3) Optimize portfolio (ESG-aware), with safe fallback to min volatility.
+    """
+    # 1) ESG signals
     try:
-        weights = logicopt.optimize_portfolio(price_df, esg_scores=esg_results)
+        if req.mock_esg:
+            raw = extractingesg.build_mock_raw(req.tickers, seed=req.seed or 2025)
+        else:
+            raw = extractingesg.download_and_extract(req.tickers)
+        esg = extractingesg.run_esg_analysis(raw)
     except Exception as e:
-        print(f"⚠️ Max Sharpe failed ({e}), falling back to minimum volatility.")
-        weights = logicopt.optimize_portfolio(price_df)
+        raise HTTPException(status_code=500, detail=f"ESG pipeline failed: {e}")
 
-    print("Optimized Portfolio Weights:", weights)
-    visualize.plot_portfolio_weights(weights)
+    # 2) Prices
+    try:
+        prices = utilityfunc.download_price_data(req.tickers, req.start_date, req.end_date)
+        if prices is None or prices.empty:
+            raise ValueError("No price data returned (empty DataFrame).")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Price download failed: {e}")
 
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description="ESG-based Portfolio Optimization CLI")
-    parser.add_argument("--tickers", nargs='+', required=True, help="List of tickers (e.g. AAPL MSFT TSLA)")
-    parser.add_argument("--start_date", required=True, help="YYYY-MM-DD")
-    parser.add_argument("--end_date", required=True, help="YYYY-MM-DD")
-    parser.add_argument("--mock_esg", action="store_true", help="Use varied mock ESG inputs for testing")
-    args = parser.parse_args()
+    # 3) Optimize (ESG-aware), with robust fallback
+    try:
+        weights = logicopt.optimize_portfolio(prices, esg_scores=esg)
+    except Exception as err:
+        # Fallback if max_sharpe (or solver) fails
+        try:
+            weights = logicopt.optimize_portfolio(prices)  # non-ESG fallback
+        except Exception as err2:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Optimization failed: {err}; fallback failed: {err2}",
+            )
 
-    main(args.tickers, args.start_date, args.end_date, use_mock=args.mock_esg)
+    return OptimizeResponse(esg=esg, weights=weights)

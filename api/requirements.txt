@@ -1,7 +1,8 @@
 fastapi
-uvicorn
-yfinance
+uvicorn[standard]
 pandas
 numpy
+yfinance
+PyPortfolioOpt
 cvxpy
-scikit-learn
+nltk
