@@ -4,5 +4,4 @@ yfinance
 pandas
 numpy
 cvxpy
-pypfopt
 scikit-learn
