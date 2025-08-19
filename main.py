@@ -98,7 +98,7 @@ html, body, [data-testid="stAppViewContainer"] {
 # ---------------- HERO ----------------
 left, right = st.columns([1.2, 1])
 with left:
-    st.markdown('<h1 class="h-hero">ESG-Informed Portfolio Optimizer</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="h-hero">EcoAlpha: ESG-Informed Portfolio Optimizer</h1>', unsafe_allow_html=True)
     st.markdown('<p class="subtle">Build balanced portfolios that respect sustainability signals — with clear risk/return controls.</p>', unsafe_allow_html=True)
     st.markdown('<a class="button-gradient" href="#optimize">Run Optimization</a>', unsafe_allow_html=True)
 with right:
