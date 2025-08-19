@@ -102,7 +102,7 @@ with left:
     st.markdown('<p class="subtle">Build balanced portfolios that respect sustainability signals — with clear risk/return controls.</p>', unsafe_allow_html=True)
     st.markdown('<a class="button-gradient" href="#optimize">Run Optimization</a>', unsafe_allow_html=True)
 with right:
-    st.markdown('<div class="card" style="text-align:center; min-height:170px;">📈<br><b>EcoAlpha</b><br><span class="subtle">Smart weights from your tickers + ESG text</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="card" style="text-align:center; min-height:170px;">🍃<br><b>EcoAlpha</b><br><span class="subtle">Smart weights from your tickers + ESG text</span></div>', unsafe_allow_html=True)
 
 st.write("")  # spacer
 
