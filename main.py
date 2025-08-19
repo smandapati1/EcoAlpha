@@ -77,7 +77,8 @@ html, body, [data-testid="stAppViewContainer"] {
         background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); }
 .button-gradient {
   display:inline-block; padding:.8rem 1.1rem; border-radius:999px; font-weight:700; border:0;
-  background: linear-gradient(90deg, var(--primary), var(--accent)); color:white;
+  background: linear-gradient(90deg, #10B981, #34D399); /* green shades */
+  color:white;
 }
 .button-gradient:hover { filter: brightness(1.06); }
 
@@ -114,7 +115,7 @@ c3.markdown('<div class="card"><div class="pill">⚡ <b>Fast</b></div><p class="
 st.write("")
 
 # ---------------- Form (in-page; no sidebar) ----------------
-st.markdown('<h3 id="optimize">Try it</h3>', unsafe_allow_html=True)
+st.markdown('<h3 id="optimize">Take a look</h3>', unsafe_allow_html=True)
 with st.container():
     with st.form("run"):
         default_tickers = "AAPL, MSFT, TSLA, GOOG, AMZN"
