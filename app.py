@@ -6,7 +6,7 @@ from src import extractingesg, utilityfunc, logicopt
 
 st.set_page_config(page_title="ECOALPHA", page_icon="🌿", layout="centered")
 
-st.title("🌿 ECOALPHA — ESG-Informed Portfolio Optimizer")
+st.title("🍃 ECOALPHA — ESG-Informed Portfolio Optimizer")
 
 # --- Sidebar controls ---
 st.sidebar.header("Settings")
