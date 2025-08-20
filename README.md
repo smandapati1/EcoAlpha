@@ -8,7 +8,7 @@ EcoAlpha is a financial analytics platform that combines **Environmental, Social
 - **Live ESG Data Integration** – Fetches sustainability scores and company data using Yahoo Finance’s APIs.  
 - **Quantitative Portfolio Optimization** – Uses *PyPortfolioOpt* and *cvxpy* to build efficient frontiers and optimize portfolios under ESG constraints.  
 - **Interactive Visualizations** – Explore ESG scores and portfolio allocations in real time with an intuitive Streamlit dashboard.  
-- **Cloud Deployment** – Hosted on Render for easy access and scalability.  
+- **Cloud Deployment** – Hosted on Streamlit for easy access and scalability.  
 
 ---
 
@@ -30,5 +30,6 @@ cd EcoAlpha
 
 # Install dependencies
 pip install -r requirements.txt
+
 
 
